@@ -1,0 +1,112 @@
+name: Install blog theme
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: replace-simple-blog
+  cancel-in-progress: false
+
+jobs:
+  replace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.BOOTSTRAP_TOKEN }}
+          persist-credentials: true
+
+      - name: Remove the old site and install the ZIP contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          from zipfile import ZipFile
+          import shutil
+          import stat
+
+          root = Path.cwd().resolve()
+          archive = root / "simple-blog-v1.zip"
+          installer = root / ".github/workflows/replace-simple-blog.yml"
+          expected_prefix = "simple-blog"
+
+          if not archive.is_file():
+              raise SystemExit("Upload simple-blog-v1.zip to the repository root first.")
+          if not installer.is_file():
+              raise SystemExit("Installer workflow path was not found.")
+
+          with ZipFile(archive) as package:
+              entries = package.infolist()
+              if not entries:
+                  raise SystemExit("The ZIP is empty.")
+
+              # Validate every entry before deleting any existing repository files.
+              prepared = []
+              for entry in entries:
+                  name = PurePosixPath(entry.filename)
+                  if name.is_absolute() or ".." in name.parts or not name.parts or name.parts[0] != expected_prefix:
+                      raise SystemExit("The ZIP has an unexpected or unsafe folder structure.")
+                  mode = entry.external_attr >> 16
+                  if stat.S_ISLNK(mode):
+                      raise SystemExit("Symbolic links are not accepted in the ZIP.")
+                  relative = Path(*name.parts[1:])
+                  if not relative.parts:
+                      continue
+                  if relative.name.lower().startswith("readme"):
+                      continue
+                  destination = (root / relative).resolve()
+                  if destination != root and root not in destination.parents:
+                      raise SystemExit("The ZIP contains a path outside the repository.")
+                  prepared.append((entry, relative))
+
+              required = {"hugo.toml", "themes/simple-blog/theme.toml"}
+              included = {relative.as_posix() for _, relative in prepared}
+              if not required.issubset(included):
+                  raise SystemExit("The ZIP is missing hugo.toml or the simple-blog theme.")
+
+              # Preserve only .git, the installer, and the source ZIP until extraction finishes.
+              for item in root.iterdir():
+                  if item.name in {".git", archive.name}:
+                      continue
+                  if item.resolve() == installer.resolve():
+                      continue
+                  if item.is_dir() and not item.is_symlink():
+                      shutil.rmtree(item)
+                  else:
+                      item.unlink()
+
+              for entry, relative in prepared:
+                  destination = root / relative
+                  if entry.is_dir():
+                      destination.mkdir(parents=True, exist_ok=True)
+                  else:
+                      destination.parent.mkdir(parents=True, exist_ok=True)
+                      with package.open(entry) as source, destination.open("wb") as target:
+                          shutil.copyfileobj(source, target)
+
+          archive.unlink()
+          installer.unlink(missing_ok=True)
+          PY
+
+      - name: Commit the replacement
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Install simple-blog"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+
+
+
