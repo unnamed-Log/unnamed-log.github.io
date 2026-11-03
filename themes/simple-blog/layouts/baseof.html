@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+{{ partial "head.html" . }}
+<body>
+  <main class="container">
+    <div class="page-tools"><button class="theme-toggle" type="button" aria-label="Switch to light theme">Switch to Light Theme</button></div>
+    {{ block "main" . }}{{ end }}
+    {{ partial "footer.html" . }}
+  </main>
+  <script defer src="{{ "enhancements.js" | relURL }}"></script>
+</body>
+</html>

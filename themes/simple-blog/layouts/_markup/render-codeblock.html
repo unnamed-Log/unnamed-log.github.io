@@ -1,0 +1,13 @@
+{{- $language := .Type | default "text" -}}
+{{- if transform.CanHighlight .Type -}}
+  {{- $highlighted := transform.HighlightCodeBlock . -}}
+  <div class="code-block">
+    <div class="code-language">{{ $language }}</div>
+    {{ $highlighted.Wrapped }}
+  </div>
+{{- else -}}
+  <div class="code-block">
+    <div class="code-language">{{ $language }}</div>
+    <pre tabindex="0"><code class="language-{{ $language }}">{{ .Inner | htmlEscape | safeHTML }}</code></pre>
+  </div>
+{{- end -}}

@@ -1,0 +1,5 @@
+{{ define "main" }}
+<a class="back" href="{{ "tags/" | relURL }}">← Back to Tags</a>
+<h1 class="page-heading">{{ .Title }}</h1>
+<ul class="posts">{{ range .Pages.ByDate.Reverse }}{{ partial "post-list.html" . }}{{ end }}</ul>
+{{ end }}

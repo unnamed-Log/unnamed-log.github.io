@@ -1,0 +1,6 @@
+{{- $posts := where site.RegularPages "Section" "posts" -}}
+[
+{{- range $i, $post := $posts.ByDate.Reverse -}}{{ if $i }},{{ end }}
+  {"title": {{ $post.Title | jsonify }}, "date": {{ $post.Date.Format "2006-01-02" | jsonify }}, "url": {{ $post.RelPermalink | jsonify }}}
+{{- end -}}
+]

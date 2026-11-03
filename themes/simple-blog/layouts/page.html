@@ -1,0 +1,31 @@
+{{ define "main" }}
+<a class="back" href="{{ "" | relURL }}">← Back to {{ site.Title }}</a>
+<article>
+  <header>
+    <h1 class="article-title">{{ .Title }}</h1>
+    <div class="meta"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time><span aria-hidden="true"> · </span>{{ site.Params.author }}</div>
+  </header>
+  {{ with .TableOfContents }}
+  <details class="article-toc">
+    <summary>On this page</summary>
+    {{ . }}
+  </details>
+  {{ end }}
+  <div class="article-body">{{ .Content }}</div>
+</article>
+{{ with site.Params.commentsRepo }}
+<section class="comments" aria-label="Comments">
+  <h2 class="page-heading">Comments</h2>
+  <script src="https://utteranc.es/client.js" repo="{{ . }}" issue-term="pathname" label="" theme="github-dark" crossorigin="anonymous" async></script>
+</section>
+{{ end }}
+{{ with .CurrentSection.Pages.ByDate.Reverse }}
+  {{ $pages := . }}{{ $current := $.Permalink }}
+  {{ range $index, $page := $pages }}{{ if eq $page.Permalink $current }}
+    <nav class="article-nav" aria-label="Article navigation">
+      {{ if gt $index 0 }}{{ with index $pages (sub $index 1) }}<div><span class="meta">← Previous post</span><br><a href="{{ .RelPermalink }}">{{ .Title }}</a></div>{{ else }}<span></span>{{ end }}{{ else }}<span></span>{{ end }}
+      {{ if lt (add $index 1) (len $pages) }}{{ with index $pages (add $index 1) }}<div class="next"><span class="meta">Next post →</span><br><a href="{{ .RelPermalink }}">{{ .Title }}</a></div>{{ else }}<span></span>{{ end }}{{ else }}<span></span>{{ end }}
+    </nav>
+  {{ end }}{{ end }}
+{{ end }}
+{{ end }}

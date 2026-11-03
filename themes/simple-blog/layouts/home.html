@@ -1,0 +1,9 @@
+{{ define "main" }}
+<a class="site-title" href="{{ "" | relURL }}">{{ site.Title }} <span style="opacity:.62">/ NOTES FROM THE FOREST</span></a>
+<p class="intro">A quiet corner for notes on code, systems, and the small details in between.</p>
+<h1 class="visually-hidden">Latest notes</h1>
+{{ $posts := where site.RegularPages "Section" "posts" }}
+{{ $paginator := .Paginate $posts }}
+<ul class="posts">{{ range $paginator.Pages }}{{ partial "post-list.html" . }}{{ end }}</ul>
+{{ partial "pagination.html" . }}
+{{ end }}

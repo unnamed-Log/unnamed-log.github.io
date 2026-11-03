@@ -1,0 +1,7 @@
+{{ define "main" }}
+<a class="site-title" href="{{ "" | relURL }}">{{ site.Title }}</a>
+<h1 class="page-heading">{{ .Title | default (.Section | title) }}</h1>
+{{ $paginator := .Paginate .Pages }}
+<ul class="posts">{{ range $paginator.Pages }}{{ partial "post-list.html" . }}{{ end }}</ul>
+{{ partial "pagination.html" . }}
+{{ end }}

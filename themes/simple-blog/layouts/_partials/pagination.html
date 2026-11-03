@@ -1,0 +1,12 @@
+{{ with .Paginator }}
+{{ if gt .TotalPages 1 }}
+<nav class="pagination" aria-label="Post pagination">
+  {{ with .Prev }}<a href="{{ .URL }}" aria-label="Previous page">←</a>{{ end }}
+  {{ range .Pagers }}
+    {{ if eq .PageNumber $.Paginator.PageNumber }}<span class="current" aria-current="page">{{ .PageNumber }}</span>{{ else }}<a href="{{ .URL }}">{{ .PageNumber }}</a>{{ end }}
+  {{ end }}
+  {{ with .Next }}<a href="{{ .URL }}" aria-label="Next page">→</a>{{ end }}
+  <span class="spacer"></span><span>{{ .PageNumber }} / {{ .TotalPages }}</span>
+</nav>
+{{ end }}
+{{ end }}

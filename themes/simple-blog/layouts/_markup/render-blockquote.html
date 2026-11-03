@@ -1,0 +1,10 @@
+{{- if eq .Type "alert" -}}
+  {{- $kind := .AlertType -}}
+  {{- $labels := dict "note" "Note" "tip" "Tip" "important" "Important" "warning" "Warning" "caution" "Caution" -}}
+  <blockquote class="alert alert-{{ $kind }}">
+    <p class="alert-heading">{{ index $labels $kind | default (title $kind) }}</p>
+    {{ .Text }}
+  </blockquote>
+{{- else -}}
+  <blockquote>{{ .Text }}</blockquote>
+{{- end -}}

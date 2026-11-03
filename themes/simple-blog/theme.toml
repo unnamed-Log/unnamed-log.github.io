@@ -1,0 +1,9 @@
+name = "simple-blog"
+license = "MIT"
+licenselink = "https://opensource.org/license/mit/"
+description = "A calm English-language Hugo theme with Markdown and MDX-style rendering."
+homepage = "https://simple-blog.github.io/"
+min_version = "0.146.0"
+
+[author]
+  name = "simple-blog"

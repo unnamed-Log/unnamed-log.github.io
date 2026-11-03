@@ -1,0 +1,4 @@
+{{ define "main" }}
+<a class="back" href="{{ "" | relURL }}">← Back to {{ site.Title }}</a>
+<article><h1 class="page-heading">{{ .Title }}</h1><div class="about-copy">{{ .Content }}</div></article>
+{{ end }}

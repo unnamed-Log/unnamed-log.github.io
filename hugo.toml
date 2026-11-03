@@ -1,0 +1,52 @@
+baseURL = "https://simple-blog.github.io/"
+locale = "en-US"
+title = "simple-blog"
+theme = "simple-blog"
+enableRobotsTXT = true
+publishDir = "public"
+
+[pagination]
+  pagerSize = 10
+
+[outputs]
+  home = ["HTML", "RSS"]
+
+[taxonomies]
+  tag = "tags"
+
+[params]
+  description = "Notes on code, systems, and the small details in between."
+  author = "simple-blog"
+commentsRepo = ""
+
+[permalinks]
+  posts = "/posts/:slug/"
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+[markup.goldmark.parser]
+  wrapStandAloneImageWithinParagraph = false
+
+[markup.goldmark.extensions]
+  footnote = true
+  strikethrough = false
+  taskList = true
+  definitionList = true
+
+[markup.goldmark.extensions.extras.delete]
+  enable = true
+[markup.goldmark.extensions.extras.insert]
+  enable = true
+[markup.goldmark.extensions.extras.mark]
+  enable = true
+[markup.goldmark.extensions.extras.subscript]
+  enable = true
+[markup.goldmark.extensions.extras.superscript]
+  enable = true
+
+[markup.goldmark.extensions.passthrough]
+  enable = true
+[markup.goldmark.extensions.passthrough.delimiters]
+  block = [['$$', '$$']]
+  inline = [['$', '$']]

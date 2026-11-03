@@ -1,0 +1,6 @@
+{{ define "main" }}
+<a class="back" href="{{ "" | relURL }}">← Back to {{ site.Title }}</a>
+<h1 class="page-heading">{{ .Title }}</h1>
+{{ $tags := site.Taxonomies.tags.Alphabetical }}
+<ul class="posts">{{ range $tags }}<li class="post"><a class="post-title" href="{{ .Page.RelPermalink }}">{{ .Page.Title }}</a><span class="post-date">{{ .Count }} {{ if eq .Count 1 }}post{{ else }}posts{{ end }}</span></li>{{ end }}</ul>
+{{ end }}

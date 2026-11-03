@@ -1,0 +1,119 @@
+name: Publish content with Hugo
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the public Hugo site
+        uses: actions/checkout@v6
+
+      - name: Restore content snapshot fingerprint
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/content-sync-state
+          key: content-sync-state-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            content-sync-state-
+
+      - name: Read content without exposing it
+        id: sync
+        env:
+          CONTENT_OWNER: ${{ secrets.CONTENT_OWNER }}
+          CONTENT_REPO: ${{ secrets.CONTENT_REPO }}
+          CONTENT_TOKEN: ${{ secrets.CONTENT_TOKEN }}
+          CONTENT_SYNC_KEY: ${{ secrets.CONTENT_SYNC_KEY }}
+        run: node .github/scripts/sync-content.mjs
+
+      - name: Create comment threads
+        if: (steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch') && vars.COMMENT_REPO != ''
+        env:
+          COMMENT_REPO: ${{ vars.COMMENT_REPO }}
+          COMMENT_REPO_TOKEN: ${{ secrets.COMMENT_REPO_TOKEN }}
+        run: node .github/scripts/sync-comment-threads.mjs
+
+      - name: Configure GitHub Pages
+        if: steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/configure-pages@v5
+
+      - name: Install Hugo
+        if: steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: '0.169.0'
+          extended: true
+
+      - name: Render the site in temporary storage
+        if: steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          SITE_BASE_URL: ${{ vars.SITE_BASE_URL }}
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          content_dir="$RUNNER_TEMP/hugo-content"
+          entry_dir="$RUNNER_TEMP/content-sync-content"
+          site_dir="$RUNNER_TEMP/site-dist"
+          log_file="$RUNNER_TEMP/hugo-build.log"
+          trap 'rm -rf "$content_dir" "$entry_dir" "$log_file"' EXIT
+          if [[ -z "${SITE_BASE_URL:-}" ]]; then
+            echo 'SITE_BASE_URL is not configured.' >&2
+            exit 1
+          fi
+          mkdir -p "$content_dir/posts"
+          cp -a content/. "$content_dir/"
+          if [[ -f "$entry_dir/about.md" ]]; then cp "$entry_dir/about.md" "$content_dir/about.md"; fi
+          find "$entry_dir" -maxdepth 1 -type f -name '*.md' -exec cp {} "$content_dir/posts/" \;
+          if ! hugo --minify --baseURL "$SITE_BASE_URL" --contentDir "$content_dir" --destination "$site_dir" >"$log_file" 2>&1; then
+            echo 'Hugo rendering failed; build output was suppressed.' >&2
+            exit 1
+          fi
+
+      - name: Upload the rendered website
+        if: steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/site-dist
+
+      - name: Deploy the rendered website
+        if: steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Save the fingerprint only after a successful publication
+        if: success() && steps.sync.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set +x
+          mkdir -p "$RUNNER_TEMP/content-sync-state"
+          cp "$RUNNER_TEMP/content-sync-candidate" "$RUNNER_TEMP/content-sync-state/snapshot.hmac"
+
+      - name: Cache the content snapshot fingerprint
+        if: success() && steps.sync.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/content-sync-state
+          key: content-sync-state-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Remove temporary content and fingerprint candidate
+        if: always()
+        shell: bash
+        run: |
+          set +x
+          rm -rf "$RUNNER_TEMP/content-sync-content" "$RUNNER_TEMP/content-sync-candidate" "$RUNNER_TEMP/comment-thread-manifest.json" "$RUNNER_TEMP/hugo-content" "$RUNNER_TEMP/hugo-build.log"

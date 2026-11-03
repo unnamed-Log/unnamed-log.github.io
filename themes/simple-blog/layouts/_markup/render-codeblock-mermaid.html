@@ -1,0 +1,2 @@
+{{- .Page.Store.Set "hasMermaid" true -}}
+<pre><code class="language-mermaid">{{ .Inner | htmlEscape | safeHTML }}</code></pre>
